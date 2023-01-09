@@ -19,7 +19,8 @@ with open(os.path.join('cdcxtoedgelist', '__init__.py')) as ver_file:
             version=re.sub("'", "", line[line.index("'"):])
 
 requirements = [
-    'argparse'
+    'argparse',
+    'ndex2'
 ]
 
 test_requirements = [
@@ -29,7 +30,7 @@ test_requirements = [
 setup(
     name='cdcxtoedgelist',
     version=version,
-    description="Runs HiDeF community detection algorithm in a container",
+    description="Creates EDGELIST from CX file",
     long_description=readme + '\n\n' + history,
     author="Christopher Churas",
     author_email='churas.camera@gmail.com',
@@ -50,11 +51,11 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     scripts=['cdcxtoedgelist/cdcxtoedgelistcmd.py'],
     test_suite='tests',
