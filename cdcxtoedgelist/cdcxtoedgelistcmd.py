@@ -4,23 +4,8 @@ import os
 import sys
 import argparse
 import traceback
-import subprocess
-import uuid
-import csv
-import shutil
-
-DEFAULT_ERR_MSG = ('Did not get any clusters from HiDeF. Not sure'
-                   ' what is going on\n')
-
-X_PREFIX = 'x'
-
-CDRES_KEY_NAME = 'communityDetectionResult'
-
-NODE_CX_KEY_NAME = 'nodeAttributesAsCX2'
-
-ATTR_DEC_NAME = 'attributeDeclarations'
-
-PERSISTENCE_COL_NAME = 'HiDeF_persistence'
+import json
+import ndex2
 
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -47,79 +32,26 @@ def _parse_arguments(desc, args):
                              'Increase to get more smaller communities')
     parser.add_argument('--weight',
                         help='Optional, name of node column containing edge weights')
-    parser.add_argument('--tempdir', default='/tmp',
-                        help='Directory needed to hold files temporarily for processing')
+    parser.add_argument('--default', default=0.0,
+                        help='if --weight is set, but a given edge lacks a value, this'
+                             'value will be output instead')
+    parser.add_argument('--failonmissingweight', action='store_true',
+                        help='If set, fail if weight column is set by and one or '
+                             'more edges lack a weight value')
     return parser.parse_args(args)
-
-
-def create_tmpdir(theargs):
-    """
-    Creates temp directory for hidef output with
-    a unique name of format cdcxtoedgelist_<UUID>
-
-    :param theargs: Holds attributes from argparse
-    :type theargs: `:py:class:`argparse.Namespace`
-    :return: Path to temp directory
-    :rtype: str
-    """
-    tmpdir = os.path.join(theargs.tempdir, 'cdcxtoedgelist_' + str(uuid.uuid4()))
-    os.makedirs(tmpdir, mode=0o755)
-    return tmpdir
-
-
-def convert_hidef_output_to_cdaps(out_stream, tempdir, prefix=X_PREFIX,
-                                  include_mapping=False):
-    """
-    Looks for x.nodes and x.edges in `tempdir` directory
-    to generate output in COMMUNITYDETECTRESULT format:
-    https://github.com/idekerlab/communitydetection-rest-server/wiki/COMMUNITYDETECTRESULT-format
-
-    This method leverages
-
-    :py:func:`#write_members_for_row`
-
-    and
-
-    :py:func:`#write_communities`
-
-    to write output
-
-    :param out_stream: output stream to write results
-    :type out_stream: file like object
-    :param tempdir:
-    :type tempdir: str
-    :return: None
-    """
-    nodefile = os.path.join(tempdir, prefix + '.nodes')
-    max_node_id = get_max_node_id(nodefile)
-    cluster_node_map = {}
-    persistence_map = {}
-    out_stream.write('{"communityDetectionResult": "')
-    with open(nodefile, 'r') as csvfile:
-        linereader = csv.reader(csvfile, delimiter='\t')
-        for row in linereader:
-            max_node_id, cur_node_id = update_cluster_node_map(cluster_node_map,
-                                                               row[0],
-                                                               max_node_id)
-            update_persistence_map(persistence_map, cur_node_id, row[-1])
-            write_members_for_row(out_stream, row,
-                                  cur_node_id)
-    edge_file = os.path.join(tempdir, prefix + '.edges')
-    write_communities(out_stream, edge_file, cluster_node_map)
-    if include_mapping is not None and include_mapping is True:
-        write_cluster_mapping(out_stream, cluster_node_map)
-    write_persistence_node_attribute(out_stream, persistence_map)
-
-    out_stream.write('\n')
-    return None
 
 
 def run_cxtoedgelist(theargs, out_stream=sys.stdout,
                      err_stream=sys.stderr):
     """
-    Runs hidef command line program and then converts
-    output to CDAPS compatible format that is output to
-    standard out.
+    Converts CX file set via theargs.input to EDGE LIST of format
+    The optional weight is set if theargs.weight is not ``None``
+    and matches a node column in CX
+
+    ..code-block::
+
+        SOURCE\tTARGET\t(optional weight)\n
+
 
     :param theargs: Holds attributes from argparse
     :type theargs: `:py:class:`argparse.Namespace`
@@ -138,6 +70,36 @@ def run_cxtoedgelist(theargs, out_stream=sys.stdout,
         err_stream.write(str(theargs.input) + ' is an empty file')
         return 4
     try:
+        weight_col = None
+        default_weight = str(theargs.default)
+        with open(theargs.input, 'r') as f:
+            raw_json = json.load(f)
+            if 'weight' in raw_json:
+                weight_col = raw_json['weight']
+                if weight_col is not None and len(str(weight_col).strip()) == 0:
+                    weight_col = None
+            if 'cx' not in raw_json:
+                # just try to read the CX directly
+                raw_json_to_load = raw_json
+            else:
+                raw_json_to_load = raw_json['cx']
+            net = ndex2.create_nice_cx_from_raw_cx(raw_json_to_load)
+
+            for edge_id, edge_obj in net.get_edges():
+                out_stream.write(str(edge_obj['s']) + '\t' + str(edge_obj['t']))
+                if weight_col is not None:
+                    edge_attr = net.get_edge_attribute(edge_id, weight_col)
+                    if edge_attr == (None, None) or edge_attr is None:
+                        if theargs.failonmissingweight:
+                            err_stream.write('\nEdge: ' + str(edge_obj) +
+                                             ' lacks a value for '
+                                             'weight column: ' +
+                                             str(weight_col) + '\n')
+                            return 2
+                        out_stream.write('\t' + default_weight)
+                    else:
+                        out_stream.write('\t' + str(edge_attr['v']))
+                out_stream.write('\n')
         return 0
     finally:
         err_stream.flush()
