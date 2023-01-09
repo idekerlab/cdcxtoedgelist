@@ -32,13 +32,7 @@ class Testcdcxtoedgelist(unittest.TestCase):
         myargs = ['inputarg']
         res = cdcxtoedgelistcmd._parse_arguments('desc', myargs)
         self.assertEqual('inputarg', res.input)
-        self.assertEqual(None, res.n)
-        self.assertEqual(5, res.k)
-        self.assertEqual(25.0, res.maxres)
-        self.assertEqual(75, res.p)
-        self.assertEqual('leiden', res.alg)
-        self.assertEqual('hidef_finder.py', res.hidefcmd)
-        self.assertEqual('/tmp', res.tempdir)
+        self.assertEqual(None, res.weight)
 
 
 if __name__ == '__main__':
