@@ -114,8 +114,10 @@ def main(args):
     :rtype: int
     """
     desc = """
-    Runs CX to EDGELIST on command line, sending output to standard
-    out
+    Takes either a CX file or a CXWITHWEIGHT json file and writes out
+    an edge list in EDGELIST format that can be fed to CDAPS tools
+    
+    
     """
     theargs = _parse_arguments(desc, args[1:])
     try:
