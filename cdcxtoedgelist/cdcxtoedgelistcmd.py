@@ -95,7 +95,7 @@ def run_cxtoedgelist(theargs, out_stream=sys.stdout,
                                              ' lacks a value for '
                                              'weight column: ' +
                                              str(weight_col) + '\n')
-                            return 2
+                            return 5
                         out_stream.write('\t' + default_weight)
                     else:
                         out_stream.write('\t' + str(edge_attr['v']))
