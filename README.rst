@@ -2,8 +2,8 @@
 Community Detection CX to EDGELIST
 ===================================================
 
-This repository creates a container that converts a CX
-file into an EDGELIST that can be used as input for CDAPS
+This repository creates a container that converts a `CX <https://home.ndexbio.org/data-model>`__
+file into an `EDGELIST <https://github.com/cytoscape/communitydetection-rest-server/wiki/EDGELIST-format>`__ that can be used as input for CDAPS
 containers
 
 Dependencies
@@ -20,7 +20,7 @@ Version `0.1.0` can be directly pulled from `Dockerhub <https://hub.docker.com/>
 
 .. code-block::
 
-   docker pull coleslawndex/cdcxtoedgelist:0.2.1
+   docker pull coleslawndex/cdcxtoedgelist:0.1.0
 
 Building
 --------
@@ -64,7 +64,7 @@ Usage
 
 .. code-block::
 
-   docker run -v coleslawndex/cdcxtoedgelist:0.2.1 -h
+   docker run -v coleslawndex/cdcxtoedgelist:0.1.0 -h
 
 
 Credits
